@@ -1,8 +1,14 @@
-import os, sys, argparse, csv, copy
+import argparse
+import copy
+import csv
+import os
+import pickle
+import sys
+from glob import glob
+
 import numpy as np
 import open3d as o3d
-from glob import glob
-import pickle
+
 
 def ICP(source, target, threshold, init_pose, iteration=30):
     # implement iterative closet point and return transformation matrix

@@ -1,5 +1,9 @@
-import os, sys, argparse
+import argparse
+import os
+import sys
+
 import numpy as np
+
 
 def calculate_dist(label, pred):
     assert label.shape[0] == pred.shape[0], 'The number of predicted results should be the same as the number of ground truth.'
