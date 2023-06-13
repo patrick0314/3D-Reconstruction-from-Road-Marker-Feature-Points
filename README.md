@@ -66,7 +66,7 @@ Use the script file - `run.sh` to run `seq1`, `seq2` and `seq3` at once.
 
 After running, the program generates corresponding point cloud folders - `pcd/seq1`, `pcd/seq2` and `pcd/seq3` and generate solution text files - `pred_pose_seq1.txt`, `pred_pose_seq2.txt` and `pred_pose_seq3.txt`.
 
-Also, since these three folder has groundtruth, the corresponding Mean Error are shown on the screen.
+Also, since these three folder have groundtruth, the corresponding Mean Error are shown on the screen.
 
 ![results](https://github.com/patrick0314/3D-Reconstruction-from-Road-Marker-Feature-Points/assets/47914151/301b1266-9c4f-4673-a9b3-ad368db58ed9)
 
