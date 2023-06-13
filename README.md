@@ -26,3 +26,15 @@ The directory structure shows below:
 ├── mvDLC.py
 └── run.sh
 ```
+
+## Prerequisites
+* matplotlib==3.3.4
+* numpy==1.24.3
+* opencv==4.6.0
+* opencv-contrib-python==4.7.0.72
+* open3d==0.17.0
+* pandas==1.5.272
+* python==3.9.0
+* tqdm==4.65.0
+
+## Usage
