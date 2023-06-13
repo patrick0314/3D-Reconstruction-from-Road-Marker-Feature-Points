@@ -18,7 +18,7 @@ from Utility import ext_cam
 parser = ArgumentParser()
 parser.add_argument("--seq", type=str, default="seq1")
 parser.add_argument("--silence","-s", type=int, default=0, help="0 for False, others for True")
-parser.add_argument("--ICP_threshold", type=float, default=0.44)
+parser.add_argument("--ICP_threshold", type=float, default=0.47)
 args = parser.parse_args()
 
 # Data Path
