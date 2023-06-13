@@ -24,7 +24,8 @@ The directory structure shows below:
 ├── src/
 ├── others/
 ├── mvDLC.py
-└── run.sh
+├── run.sh
+└── ReadMe.md
 ```
 
 ## ☆ Prerequisites
