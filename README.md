@@ -38,3 +38,14 @@ The directory structure shows below:
 * tqdm==4.65.0
 
 ## Usage
+### Run with commands
+Type the command below and replace `{seq}` with your desired sequence folder name and default is `seq1`
+Type the command below and replace `{threshold}` with your desired ICP threshold aand defualt is `0.47`
+```
+python src/main.py --seq {seq} --ICP_threshold {threshold}
+```
+### Run with script files
+Type the command below and replace `{seq}` with your desired sequence folder name like `seq1`, `seq2` or `seq3`.
+```
+python src/main.py --seq {seq}
+```
