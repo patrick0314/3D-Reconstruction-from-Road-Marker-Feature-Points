@@ -45,7 +45,12 @@ Type the command below and replace `{threshold}` with your desired ICP threshold
 python src/main.py --seq {seq} --ICP_threshold {threshold}
 ```
 ### Run with script files
-Type the command below and replace `{seq}` with your desired sequence folder name like `seq1`, `seq2` or `seq3`.
+Modify the `run.sh`:
+* use the command as above.
+* change the `{seq}` and `{threshold` as you want.
+After modification, type the command below.
 ```
-python src/main.py --seq {seq}
+bash run.sh
 ```
+
+## Results
