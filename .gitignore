@@ -2,3 +2,4 @@
 /pcd
 **/*.zip
 **/__pycache__
+*.txt
