@@ -1,21 +1,19 @@
+import numpy as np
+from numpy import asarray
 import csv
 import os
-
-import cv2
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 from matplotlib.patches import Rectangle
-from numpy import asarray
 from tqdm import tqdm
-
+import pandas as pd
+import cv2
 
 class Dataset:
-    def __init__(self, name="seq1", loc="./", img_npz_loc=""):
+    def __init__(self, name="seq1", loc=".", img_npz_loc=""):
         self.name = name
         self.all_timestamp = []
         self.gt_timestamp = []
-        self.loc = loc+name
+        self.loc = os.path.join(loc, name)
         self.image = None
         if img_npz_loc != "":
             print("load raw_image...")
@@ -24,19 +22,19 @@ class Dataset:
                 # self.image = tmp['arr_0']
             print("end of loading images")
         self.order = None
-
     def get_raw_image(self, save_loc="", silence=False):
-        if self.image is not None: return self.image
-        else: self.image = []
+        if self.image is not None:
+            return self.image
+        else: 
+            self.image = []
         save_loc = f"./raw_images_{self.name}.npz" if save_loc=="" else save_loc 
-        if not self.check_do_time_stamp(): self.get_time_stamp()
-
+        if not self.check_do_time_stamp():
+            self.get_time_stamp()
         for ts in tqdm(self.all_timestamp, desc="load images", disable=silence):
             filename = os.path.join(self.loc, "dataset", ts, "raw_image.jpg")
             img = asarray(cv2.imread(filename))
             self.image.append(img)
         self.image = asarray(self.image)
-
         print("\nsave to npz...")
         with open(save_loc, "wb") as f:
             np.savez_compressed(f, self.image)
@@ -45,7 +43,7 @@ class Dataset:
     def get_raw_image(self, timestamp=[], silence=False):
         imgs = []
         for ts in tqdm(timestamp, desc="get images...", disable=silence):
-            filename = os.path.join(self.loc, "dataset", ts, "raw_image.jpg")
+            filename = os.path.join(self.loc,"dataset", ts, "raw_image.jpg")
             img = asarray(cv2.imread(filename))
             imgs.append(img)
         return asarray(imgs)
@@ -64,6 +62,7 @@ class Dataset:
         f.close()
         return self.gt_timestamp if with_GT else self.all_timestamp
         
+
     def get_camera_dir(self):   
         # four directions: f, fl, fr, b -> encode to 0, 1, 2, 3
         if not self.check_do_time_stamp():
@@ -95,6 +94,7 @@ class Dataset:
                 dir = dir_info.split("_")[-2]
                 dir_list.append(dir_dict[dir])
         return dir_list[0] if oneTs else dir_list 
+        
         
     def get_detect_road_marker(self, silence=False):       
         # store with timestamp
@@ -180,7 +180,9 @@ class Dataset:
             self.raw_speed.append(np.loadtxt(os.path.join(self.loc,"other_data", ts+"_raw_speed.csv"), dtype=float))
         self.raw_speed = asarray(self.raw_speed)
         return self.raw_speed
-    
+
+        
+
     def get_raw_imu(self):
         # first row: 4 item
         # second:    3 item

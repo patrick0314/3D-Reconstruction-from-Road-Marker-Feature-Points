@@ -1,7 +1,4 @@
-import argparse
-import os
-import sys
-
+import os, sys, argparse
 import numpy as np
 
 
@@ -11,6 +8,8 @@ def calculate_dist(label, pred):
     dist = np.mean(dist)
     return dist
 
+
+
 def benchmark(dataset_path, sequeneces, src_path):
     if type(sequeneces) == str:
         sequeneces = [sequeneces]
@@ -19,9 +18,3 @@ def benchmark(dataset_path, sequeneces, src_path):
         pred = np.loadtxt(src_path, delimiter=" ")  #TODO: Enter your filename here#
         score = calculate_dist(label, pred)
         print(f'Mean Error of {seq}: {score:.5f}')
-
-if __name__ == '__main__':
-    dataset_path = '../../ITRI_dataset'
-    # sequences = ['seq1', 'seq2', 'seq3']
-    seq = ['seq1']
-    benchmark(dataset_path, seq, src_path="./pred_pose_seq1.txt")

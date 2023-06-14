@@ -1,18 +1,19 @@
-import math
-import os
-import sys
-
 import cv2
 import numpy as np
 
 
 class RoadMarkerDetection():
-    def __init__(self, coefficient=0.0001) -> None:
-        self.coefficient = coefficient
-
+    def __init__(self, coefficient=0.01, ratio=18, lowerbound=130) -> None:
+        self.coefficient = coefficient#0.01
+        self.ratio = ratio
         self.points = [] # all points
+        self.lowerbound = lowerbound
+        self.frone_boundingbox = [] # camera_idx = 0
+        self.left_boundingbox = [] # camera_idx = 1
+        self.right_boundingbox = [] # camera_idx = 2
+        self.back_boundingbox = [] # camera_idx = 3
 
-    def detection(self, img, camera_mask, road_marker, config):
+    def detection(self, img, camera_mask, road_marker, config, camera_idx):
         self.points = []
         camera_mask = (camera_mask.reshape(camera_mask.shape[0], camera_mask.shape[1], 1).repeat(3, axis=2)) // 255
         img = img * camera_mask
@@ -20,7 +21,7 @@ class RoadMarkerDetection():
 
         # Compute mask in YCbCr color space
         img_YCbCr = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
-        lower = np.array([130, 118, 118])
+        lower = np.array([self.lowerbound, 118, 118])
         upper = np.array([255, 138, 138])
         mask1 = cv2.inRange(img_YCbCr, lower, upper)
 
@@ -33,6 +34,12 @@ class RoadMarkerDetection():
         cv2.waitKey(0)
         '''
 
+        # Capture high confidence bounding box from previous frame
+        if camera_idx == 0: prev_bboxes = self.frone_boundingbox; self.frone_boundingbox = []
+        elif camera_idx == 1: prev_bboxes = self.left_boundingbox; self.left_boundingbox = []
+        elif camera_idx == 2: prev_bboxes = self.right_boundingbox; self.right_boundingbox = []
+        elif camera_idx == 3: prev_bboxes = self.back_boundingbox; self.back_boundingbox = []
+
         imgDetected = img.copy()
         imgContour = img.copy()
         pre_points = 0
@@ -40,12 +47,21 @@ class RoadMarkerDetection():
             # implement Non-Maximum Suppression
             bboxes = self.nms(np.array(road_marker[road_marker['class_id']==i]), 0.15)
 
+            #if len(prev_bboxes) != 0:
+            #    bboxes = np.concatenate((bboxes, prev_bboxes), axis=0)
+            #    bboxes = self.nms(bboxes, 0.15)
+
             # find the contour and mark the corner points
             for bbox in bboxes:
                 x1, y1, x2, y2 = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
                 class_id, probability = int(bbox[4]), float(bbox[5])
 
                 if probability < 0.1: continue
+                #if probability > 0.8:
+                #    if camera_idx == 0: self.frone_boundingbox.append([x1, y1, x2, y2, class_id, probability-0.1])
+                #    elif camera_idx == 1: self.left_boundingbox.append([x1, y1, x2, y2, class_id, probability-0.1])
+                #    elif camera_idx == 2: self.right_boundingbox.append([x1, y1, x2, y2, class_id, probability-0.1])
+                #    elif camera_idx == 3: self.back_boundingbox.append([x1, y1, x2, y2, class_id, probability-0.1])
 
                 # Write bounding box with class and probability
                 if x1 < 0: x1 = 0
@@ -63,15 +79,15 @@ class RoadMarkerDetection():
                 if not contours: continue # if there is no contour found
                 imgContour = cv2.drawContours(imgDetected, contours, -1, config.categories_color[class_id], 1, lineType=cv2.LINE_AA)
                 
-                length = 2*(x2-x1) + 2*(y2-y1)
-                self.detectCorner(contours, length, img, config, class_id)
+                bbox_len = 2*((x2-x1)+(y2-y1))
+                self.detectCorner(contours, bbox_len, img, config, class_id)
                 
                 # if there is no key point detected in mask2, compute with mask1
                 if len(self.points) - pre_points < 2:
                     contours = self.detectContour(mask1, x1, x2, y1, y2)
                     if not contours: continue # if there is no contour found
                     imgContour = cv2.drawContours(imgDetected, contours, -1, config.categories_color[class_id], 1, lineType=cv2.LINE_AA)
-                    self.detectCorner(contours, length, img, config, class_id)
+                    self.detectCorner(contours, bbox_len, img, config, class_id)
 
                 pre_points = len(self.points)
         
@@ -120,9 +136,9 @@ class RoadMarkerDetection():
         contours, hierarchy = cv2.findContours(imgBounded, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         return contours
     
-    def detectCorner(self, contours, length, img, config, class_id):
+    def detectCorner(self, contours, bbox_len, img, config, class_id):
         for contour in contours:
-            if cv2.arcLength(contour, True) < (length/18): continue
+            if cv2.arcLength(contour, True) < (bbox_len/self.ratio): continue
             epsilon = self.coefficient * cv2.arcLength(contour, True)
             approx = cv2.approxPolyDP(contour, epsilon, True)
             self.points.extend(approx[:, 0, :])

@@ -1,46 +1,7 @@
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
-def NormalizeMatrix(h, w):
-    """
-        give a matrix to normalize the index of pixel to [-1~1, -1~1], to let index (0,0) at the image center
-        
-        (0,0) ----------- (w,0)             (-1,-1) ----------- (1,-1)
-          |                 |                  |                   |
-          |                 |       ==>        |                   |
-          |                 |                  |                   |
-        (0,h) ----------- (w,h)             ( -1,1) ----------- ( 1,1)
-    """
-
-    normalizeMatrix = np.eye(3)
-
-    # normalizeMatrix[:2, 2] = -1
-    normalizeMatrix[2, 0] = -w/2
-    normalizeMatrix[2, 1] = -h/2
-    # normalizeMatrix = np.eye(3)
-    # normalizeMatrix[0,0] = 2/w
-    # normalizeMatrix[1,1] = 2/h
-    # normalizeMatrix[2,:2] = -1
-    return normalizeMatrix
-
-def NormalizeImageIndex(h, w, keypoints, matrix=None):
-    # x,y
-    assert keypoints.shape[1] == 2 
-    if matrix is None:
-        normalizeMatrix = NormalizeMatrix(h=h, w=w)
-    else: normalizeMatrix = matrix
-    normalized_keypnts = np.concatenate((keypoints.T, np.array([np.ones(keypoints.shape[0])])), axis=0)
-    normalized_keypnts = normalizeMatrix @ normalized_keypnts
-    return (normalized_keypnts[:2]).T
-
-def deNormalizeImageIndex(h, w, keypoints):
-    assert keypoints.shape[1] == 2
-    denormalized_keypnts = np.concatenate((keypoints.T, np.ones(keypoints.shape[0])), axis=0)
-    denormalizeMatrix = np.linalg.inv(NormalizeMatrix(h=h, w=w))
-
-    denormalized_keypnts = denormalizeMatrix @ denormalized_keypnts
-    return (denormalized_keypnts[:2]).T
-        
 class Transform():
     def __init__(self):
         pass
@@ -59,6 +20,7 @@ class NormalizePoint():
         pass
     def UndistorPoint(self,points,index,Camera):
         return [np.squeeze(cv2.undistortPoints(points[i].pt,Camera.camera_Matrix,Camera.distortion_coefficients)) for i in index]
+
 
 class Camera():
     def __init__(self,yaml=None,init_Pose=None,resolution=None,camera_Matrix=None,distortion_coefficients=None,rectification_matrix=None,projection_matrix=None,mask=None):
@@ -132,17 +94,6 @@ class Extrinsic_Camera:
             [2 * (q[0] * q[2] - q[3] * q[1]), 2 * (q[1] * q[2] + q[3] * q[0]), 1.0 - 2 * (q[0] * q[0] + q[1] * q[1]), 0],
             [0,0,0,1]
         ])
-        # q0, q1, q2, q3 = self.Q[0], self.Q[1], self.Q[2], self.Q[3]
-        # self.Transform = np.array( \
-        # [
-        #    [1-2*q2**2-2*q3**2, 2*q1*q2+2*q0*q3, 2*q1*q3-2*q0*q2, 0],
-        #    [2*q1*q2-2*q0*q3, 1-2*q1**2-2*q3**2, 2*q2*q3+2*q0*q1, 0],
-        #    [2*q1*q3+2*q0*q2, 2*q2*q3-2*q0*q1, 1-2*q1**2-2*q2**2, 0],
-        #    [0,                  0,              0,               1],
-        # ])
-        # Translation = np.eye(4)
-        # Translation[:3, 3] = self.Translation
-        # self.Transform = np.dot(Translation, self.Transform)
         self.Transform[:3, 3] = self.Translation
         return self.Transform
     
@@ -155,7 +106,6 @@ class Extrinsic_Camera:
         # the matrix transform baselink to camera coordinate
         self.Transform_from_baselink = np.linalg.inv(self.Transform_to_baselink)
         return self.Transform_from_baselink
-    
 class Ext_cam:
     """
         This class is to pack 4 extrinsic matrix of cameras together
@@ -172,29 +122,27 @@ class Ext_cam:
 
 ext_cam = Ext_cam()
 
-if __name__ == "__main__":
-    f_c = Extrinsic_Camera(np.array([0.0, 0.0, 0.0, -0.5070558775462676, 0.47615311808704197, -0.4812773544166568, 0.5334272708696808]))
-    f_r = Extrinsic_Camera(np.array([0.559084, 0.0287952, -0.0950537, -0.0806252, 0.607127, 0.0356452, 0.789699]), f_c.Transform_to_baselink)
-    f_l = Extrinsic_Camera(np.array([-0.564697, 0.0402756, -0.028059, -0.117199, -0.575476, -0.0686302, 0.806462]), f_c.Transform_to_baselink)
-    b = Extrinsic_Camera(np.array([-1.2446, 0.21365, -0.91917, 0.074732, -0.794, -0.10595, 0.59393]), f_l.Transform_to_baselink)
-    print(np.dot(f_l.Transform_to_baselink, np.array([0,0,0,1]).T))
-    print(np.dot(b.Transform_to_baselink, np.array([0,0,0,1]).T))
-    P = np.array([549.959, 0.0, 728.516, 0.0, 0.0, 549.851, 448.147, 0.0, 0.0, 0.0, 1.0, 0.0]).reshape(3,4)
-    K = np.array([[658.929184246, 0.0, 721.005287695, 0.0, 658.798994733, 460.495402628, 0.0, 0.0, 1.0]]).reshape(3,3)
-    _P = np.dot(K,f_l.Transform_to_baselink[:3,:3])
-    print(P)
-    print(np.linalg.inv(_P))
-    # print(np.dot(K,f_l.Transform_to_baselink[:3,:3]))
-    print(f_l.Transform_to_baselink)
-    print(np.linalg.pinv(f_l.Transform_to_baselink))
-    Tb_inv = np.linalg.pinv(f_l.Transform_to_baselink)
+# visualize 3d point cloud via plt
+def visualize_pcd_plt(pcd):
+    # ignore z
+    plt.scatter(pcd[:,0],pcd[:,1], s=0.5)
+    plt.show()  
 
-    """
-    debugging:
-        the origin of f_r at coordinate baselink is: 
-            -0.047, -0.564, -0.043
-        the origin of f_r at coordinate f is:
-            0.559, 0.028, -0.095
-        the origin of baselink at coordinate f_r is:
-            -0.236, 0.0498, -0.514
-    """
+def visualize_pcd_plt_4cam(pcds):
+    plt.gca().set_aspect('equal')
+    for pcd in pcds:
+        p = pcd["pcd"]
+        c = pcd["color"]
+        plt.scatter(p[:,0], p[:,1], s=1, c=c)
+    plt.show()
+
+
+"""
+debugging:
+    the origin of f_r at coordinate baselink is: 
+        -0.047, -0.564, -0.043
+    the origin of f_r at coordinate f is:
+        0.559, 0.028, -0.095
+    the origin of baselink at coordinate f_r is:
+        -0.236, 0.0498, -0.514
+"""

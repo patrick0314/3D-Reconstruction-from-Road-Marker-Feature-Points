@@ -1,14 +1,7 @@
-import argparse
-import copy
-import csv
-import os
-import pickle
-import sys
-from glob import glob
-
 import numpy as np
 import open3d as o3d
-
+from config import dataset_path
+import os
 
 def ICP(source, target, threshold, init_pose, iteration=30):
     # implement iterative closet point and return transformation matrix
@@ -35,55 +28,27 @@ def numpy2pcd(arr):
     return pcd
 
 def ICP_all_timestamp(src_npy, threshold, seq="seq1"):
-    path_name = f"./ITRI_dataset/{seq}/dataset"
-    timestamp_path = f'./ITRI_dataset/{seq}/localization_timestamp.txt'
+    path_name = os.path.join(dataset_path, seq, "dataset")
+    timestamp_path = os.path.join(dataset_path, seq, "localization_timestamp.txt")
     timestamp = np.loadtxt(timestamp_path, dtype=str)
     # init_pose = csv_reader(f'{path_name}initial_pose.csv')
     src_pcd = numpy2pcd(src_npy)
     result = []
     for i in timestamp:
-        target_pcd = np.loadtxt(f"{path_name}/{i}/sub_map.csv", delimiter=",", dtype=float)
+        target_pcd = np.loadtxt(os.path.join(path_name, i, "sub_map.csv"), delimiter=",", dtype=float)
         target_pcd = numpy2pcd(target_pcd)
-        init_pose = csv_reader(f"{path_name}/{i}/initial_pose.csv")
+        init_pose = csv_reader(os.path.join(path_name, i, "initial_pose.csv"))
         transformation = ICP(src_pcd, target_pcd, threshold=threshold, init_pose=init_pose)
         result.append([transformation[0,3], transformation[1,3]])
     return np.array(result)
 
 def ICP_with_timestamp(src_npy, seq, timestamp, threshold=0.02):
     src_pcd = numpy2pcd(src_npy)
-    path_name = f"./ITRI_dataset/{seq}/dataset/{timestamp}"
-    target_pcd = np.loadtxt(f"{path_name}/sub_map.csv", delimiter=",", dtype=float)
+    path_name = os.path.join(dataset_path, seq, "dataset", timestamp)
+    target_pcd = np.loadtxt( os.path.join(path_name, "sub_map.csv"), delimiter=",", dtype=float)
     target_pcd = numpy2pcd(target_pcd)
-    init_pose = csv_reader(f"{path_name}/initial_pose.csv")
+    init_pose = csv_reader( os.path.join(path_name, "initial_pose.csv"))
     transformation, no_correspondence = ICP(src_pcd, target_pcd, threshold=threshold, init_pose=init_pose)
     return [transformation[0,3], transformation[1,3]], no_correspondence
 
     
-if __name__ == '__main__':
-    with open("MapnColor.pckl", "rb") as f:
-        source, _ , _ = pickle.load(f)
-    result = ICP_all_timestamp(source, "test2")
-    # np.savetxt("result_seq1.csv", result, delimiter=",")
-    np.savetxt("pred_pose.txt", result, delimiter=" ")
-    # path_name = '../../ITRI_dataset/seq1/dataset/1681710717_541398178'
-
-    # # Target point cloud
-    # target = csv_reader(f'{path_name}/sub_map.csv')
-    # target_pcd = numpy2pcd(target)
-
-    # # Source point cloud
-    # #TODO: Read your point cloud here#
-    # with open("MapnColor.pckl", "rb") as f:
-    #     source, _ , _ = pickle.load(f) 
-
-    # # source = csv_reader(f'{path_name}/[[[your file name]]]')
-    # source_pcd =  numpy2pcd(source)
-
-    # # Initial pose
-    # init_pose = csv_reader(f'{path_name}/initial_pose.csv')
-
-    # # Implement ICP
-    # transformation = ICP(source_pcd, target_pcd, threshold=0.02, init_pose=init_pose)
-    # pred_x = transformation[0,3]
-    # pred_y = transformation[1,3]
-    # print(pred_x, pred_y)
